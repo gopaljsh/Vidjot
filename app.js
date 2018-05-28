@@ -15,12 +15,12 @@ mongoose.connect('mongodb://localhost/vidjot-dev', {
 require('./models/Idea');
 const Idea = mongoose.model('ideas');
 
-//Method override middleware
-app.use(methodOverride('X-HTTP-Method-Override'))
-
 // Body parser middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+//Method override middleware
+app.use(methodOverride('_method'))
 
 //Handlebar Middleware
 app.engine('handlebars', exphbs({
@@ -59,8 +59,27 @@ app.get('/ideas/edit/:id', (req, res) => {
 });
 
 //Edit ideas route
-app.get('/ideas/:id', (req, res) => {
-    res.send('PUT');
+app.put('/ideas/:id', (req, res) => {
+    Idea.findOne({
+        _id: req.params.id
+    })
+        .then(idea => {
+            idea.title = req.body.title;
+            idea.details = req.body.details;
+
+            idea.save()
+                .then(idea => {
+                    res.redirect('/ideas');
+                });
+        })
+});
+
+//Delete ideas
+app.delete('/ideas/:id', (req, res) => {
+    Idea.remove({_id: req.params.id})
+        .then(() => {
+            res.redirect('/ideas');
+        })
 });
 
 //Show ideas route
