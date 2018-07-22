@@ -2,12 +2,16 @@ const express = require('express');
 const exphbs = require('express-handlebars');
 const methodOverride = require('method-override');
 const bodyParser = require('body-parser');
+const passport = require('passport');
+const session = require('express-session');
 const mongoose = require('mongoose');
 
 const app = express();
 
 const ideas = require('./routes/ideas');
 const users = require('./routes/users');
+
+require('./config/passport')(passport);
 
 //Connect to mongodb
 mongoose.connect('mongodb://localhost/vidjot-dev', {
@@ -21,6 +25,23 @@ app.use(bodyParser.json());
 
 //Method override middleware
 app.use(methodOverride('_method'))
+
+//Express session middleware
+app.use(session({
+    secret: 'secret',
+    resave: true,
+    saveUninitialized: true
+}));
+
+//Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
+
+//Global variables
+app.use((req, res, next) => {
+    res.locals.user = req.user || null;
+    next();
+});
 
 //Handlebar Middleware
 app.engine('handlebars', exphbs({

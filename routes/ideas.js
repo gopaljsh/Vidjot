@@ -1,29 +1,34 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+const {ensureIsAuthenticated} = require('../helper/auth');
 
 require('../models/Idea');
 const Idea = mongoose.model('ideas');
 
 //Add ideas route
-router.get('/add', (req, res) => {
+router.get('/add', ensureIsAuthenticated, (req, res) => {
     res.render('ideas/add');
 });
 
 //Edit ideas route
-router.get('/edit/:id', (req, res) => {
+router.get('/edit/:id', ensureIsAuthenticated, (req, res) => {
     Idea.findOne({
         _id: req.params.id
     })
         .then(idea => {
-            res.render('ideas/edit', {
-                idea:idea
-            });
+            if(idea.user != req.user.id) {
+                res.redirect('/ideas')
+            } else {
+                res.render('ideas/edit', {
+                    idea:idea
+                });
+            }
         })
 });
 
 //Edit ideas route
-router.put('/:id', (req, res) => {
+router.put('/:id', ensureIsAuthenticated, (req, res) => {
     Idea.findOne({
         _id: req.params.id
     })
@@ -47,8 +52,10 @@ router.delete('/:id', (req, res) => {
 });
 
 //Show ideas route
-router.get('/', (req, res) => {
-    Idea.find({})
+router.get('/', ensureIsAuthenticated, (req, res) => {
+    Idea.find({
+        user: req.user.id
+    })
         .sort({date:'desc'})
         .then(ideas => {
             res.render('ideas/index', {
@@ -59,7 +66,7 @@ router.get('/', (req, res) => {
 });
 
 //Ideas route
-router.post('/', (req, res) => {
+router.post('/', ensureIsAuthenticated, (req, res) => {
     let errors = [];
 
     if(!req.body.title) {
@@ -83,7 +90,8 @@ router.post('/', (req, res) => {
     } else {
         const newUser = {
             title: req.body.title,
-            details: req.body.details
+            details: req.body.details,
+            user: req.user.id
         }
         new Idea(newUser)
             .save()
